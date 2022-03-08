@@ -10,7 +10,11 @@ import {
 import { v5 } from "uuid";
 
 // Note: manage connections... not users. :D
-const server = http.createServer();
+const server = http
+  .createServer((req) => {
+    console.log("new request", req);
+  })
+  .listen(process.env.PORT || 3000);
 const io = new Server(server);
 
 io.on("connection", (socket) => {
