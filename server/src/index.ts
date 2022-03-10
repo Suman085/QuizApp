@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import http from "http";
+import express from "express";
 import {
   addUser,
   getAllUsers,
@@ -9,13 +10,18 @@ import {
 } from "./users";
 import { v5 } from "uuid";
 
+var app = express();
+app.use(express.static(__dirname + "/"));
+
 // Note: manage connections... not users. :D
-const server = http
-  .createServer((req) => {
-    console.log("new request", req);
-  })
-  .listen(process.env.PORT || 3000);
+const server = http.createServer(app);
 const io = new Server(server);
+
+app.get("/", (req, res) => {
+  res.send("hello world");
+});
+
+server.listen(process.env.PORT || 5000);
 
 io.on("connection", (socket) => {
   socket.on("disconnect", () => {
