@@ -8,7 +8,7 @@ import PlayerTable from "./components/PlayerTable";
 
 function PlayerList({ players, ...props }: BoxProps & { players: IUser[] }) {
   const noOfReadyPlayers = React.useMemo(() => {
-    return players.filter((player) => player.status === "Ready").length;
+    return players.filter((player) => player.status === "ready").length;
   }, [players]);
   return (
     <Card
