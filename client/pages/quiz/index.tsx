@@ -13,9 +13,12 @@ import {
   Text,
   Heading,
   useColorModeValue,
-  useBreakpointValue,
-  FlexboxProps,
-  ResponsiveValue,
+  Input,
+  useClipboard,
+  VStack,
+  Editable,
+  EditableInput,
+  EditablePreview,
 } from "@chakra-ui/react";
 import QuizBoard from "../../src/components/QuizBoard";
 import PlayerList from "../../src/components/PlayerList";
@@ -27,33 +30,54 @@ import { useUserContext } from "../../src/providers/UserProvider";
 function Quiz() {
   const socket = React.useContext(SocketContext);
   const router = useRouter();
-  const { language } = router.query;
+  const quizId = router.query.quizId as string;
   const [users, setUsers] = React.useState<IUser[]>([]);
   const [timer, setTimer] = React.useState<number>(10);
-  const { user: self, clearUser } = useUserContext();
+  const [isComplete, setIsComplete] = React.useState(false);
+  const { user: self, clearUser, loginUser, updateUsername } = useUserContext();
+  const [value, setValue] = React.useState("");
+  const { hasCopied, onCopy } = useClipboard(value);
 
+  React.useEffect(() => {
+    setValue(window?.location?.href);
+  }, []);
   const isSelfReady = React.useMemo(() => {
-    const isReady =
-      users.find((user) => user.username === self?.username)?.status ===
-      "Ready";
-    return isReady;
+    return (
+      users.find((user) => user.username === self?.username)?.status === "ready"
+    );
   }, [self, users]);
 
   const isAllReady = React.useMemo(() => {
-    const readyUsers = users.filter((user) => user.status === "Ready");
+    const readyUsers = users.filter((user) => user.status === "ready");
     return users.length !== 0 && readyUsers.length === users.length;
   }, [users]);
 
   React.useEffect(() => {
+    socket?.on("onLoggedIn", (user: IUser) => {
+      user.quizId = quizId;
+      loginUser!(user);
+    });
+    return () => {
+      socket?.off("onLoggedIn");
+    };
+  }, [loginUser, quizId, socket]);
+
+  React.useEffect(() => {
     socket?.on("allUsers", ({ users }) => {
-      setUsers(users);
+      setUsers(users ?? []);
       setTimer(10);
     });
-    socket?.emit("loadUsers");
     return () => {
       socket?.off("allUsers");
     };
   }, [socket]);
+
+  React.useEffect(() => {
+    if (self === undefined && quizId && !isComplete) {
+      socket?.emit("login", { quizId });
+      setIsComplete(true);
+    }
+  }, [isComplete, quizId, self, socket]);
 
   React.useEffect(() => {
     let interval: any;
@@ -68,50 +92,85 @@ function Quiz() {
   }, [socket, isAllReady]);
 
   const handleLeave = React.useCallback(() => {
-    socket?.emit("logout");
+    socket?.emit("logout", { quizId, username: self?.username });
     clearUser?.();
     Router.replace("/");
-  }, [clearUser, socket]);
+  }, [clearUser, quizId, self?.username, socket]);
+
+  const handleSubmit = React.useCallback(
+    (value: string) => {
+      socket?.emit("updateUsername", { quizId, name: value });
+      updateUsername?.(value);
+    },
+    [quizId, socket, updateUsername]
+  );
+
+  const bg = useColorModeValue("gray.100", "gray.900");
   return (
-    <Box background="radial-gradient(circle, rgba(2,0,36,1) 0%, rgba(9,9,121,1) 11%, rgba(0,212,255,1) 100%)">
-      <Flex
-        w="100%"
-        h={16}
-        justifyContent="end"
-        alignItems={"center"}
-        padding={"1rem"}
-        bg={useColorModeValue("gray.100", "gray.900")}
-      >
-        <Menu>
-          <MenuButton
-            as={Button}
-            rounded={"full"}
-            variant={"link"}
-            cursor={"pointer"}
-            minW={0}
-          >
-            <HStack align="center">
-              <Avatar size={"sm"} src={self?.avatar} />
-              <Text>{self?.username}</Text>
-            </HStack>
-          </MenuButton>
-          <MenuList>
-            <MenuItem>Your Profile</MenuItem>
-            <MenuDivider />
-            <MenuItem onClick={handleLeave}>Leave quiz</MenuItem>
-          </MenuList>
-        </Menu>
-      </Flex>
-      <Heading p="1rem">
-        Quiz-{language}{" "}
-        {isAllReady && (
-          <Box as="span" color={"orange.400"}>
-            Starting in {timer}...
-          </Box>
-        )}
-      </Heading>
+    <Box background="radial-gradient(circle, rgba(2,0,36,1) 0%, rgba(0,9,121,1) 11%, rgba(0,212,255,1) 100%)">
+      {self && (
+        <HStack
+          w="100%"
+          h={16}
+          justifyContent="end"
+          alignItems={"center"}
+          padding={"1rem"}
+          bg={bg}
+        >
+          <Menu>
+            <MenuButton
+              as={Button}
+              rounded={"full"}
+              variant={"link"}
+              cursor={"pointer"}
+              minW={0}
+            >
+              <Avatar size={"sm"} src={self.avatar} />
+            </MenuButton>
+            <MenuList>
+              <MenuItem>Your Profile</MenuItem>
+              <MenuDivider />
+              <MenuItem onClick={handleLeave}>Leave quiz</MenuItem>
+            </MenuList>
+          </Menu>
+          <Editable onSubmit={handleSubmit} defaultValue={self.username}>
+            <EditablePreview />
+            <EditableInput />
+          </Editable>
+        </HStack>
+      )}
+      <HStack justify={"space-between"} p="1rem">
+        <Heading>
+          {isAllReady && (
+            <Box as="span" color={"orange.400"}>
+              Starting in {timer}...
+            </Box>
+          )}
+        </Heading>
+        <VStack align="end" px="1rem">
+          <Text color={"white"}>Copy the link and share with your friends</Text>
+          <Flex>
+            <Input
+              value={value}
+              isReadOnly
+              placeholder="Welcome"
+              color={"white"}
+            />
+            <Button onClick={onCopy} ml={2}>
+              {hasCopied ? "Copied" : "Copy"}
+            </Button>
+          </Flex>
+        </VStack>
+      </HStack>
+
       <HStack p="1rem" spacing="1rem" h="100%">
-        <QuizBoard flexGrow={1} h="100%" minH="30rem" isReady={isSelfReady} />
+        <QuizBoard
+          flexGrow={1}
+          h="100%"
+          minH="30rem"
+          isReady={isSelfReady}
+          quizId={quizId}
+        />
         <PlayerList minH="30rem" players={users} />
       </HStack>
     </Box>

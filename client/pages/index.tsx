@@ -15,44 +15,40 @@ import {
   FormControl,
   FormLabel,
 } from "@chakra-ui/react";
-import { USERNAME } from "../src/consts/storage";
-import { isEmpty } from "lodash";
-import { IUser } from "../src/interfaces/IUser";
 import { Illustration } from "../src/illustrations/home-illustration";
 import RadioCard from "../src/components/Radio";
 import Router from "next/router";
 import { SocketContext } from "../src/socket";
-import { userStorage } from "../src/storage/user";
-import { generateAvatarUrl } from "../src/utils";
-import { useUserContext } from "../src/providers/UserProvider";
 
 const options = ["Javascript", "Python", "Dart"];
 
 const Home: NextPage = () => {
   const socket = React.useContext(SocketContext);
-  const { user, loginUser } = useUserContext();
   const { getRootProps, getRadioProps } = useRadioGroup({
     name: "language",
     defaultValue: "Javascript",
   });
+
+  React.useEffect(() => {
+    socket?.on("onQuizCreated", (quiz) => {
+      Router.push({ pathname: "/quiz", query: { quizId: quiz.id } });
+    });
+  }, [socket]);
 
   const group = getRootProps();
 
   const handleSubmit = React.useCallback(
     (e: React.SyntheticEvent) => {
       e.preventDefault();
+
       const target = e.target as typeof e.target & {
-        username: { value: string };
         language: { value: string };
       };
-      const username = target.username.value;
-      const language = target.language.value;
-      const avatarUrl = generateAvatarUrl();
-      const user = { username, language, avatar: avatarUrl, quizId: language };
-      loginUser?.(user);
-      Router.push({ pathname: "/quiz", query: { language } });
+      socket?.emit("createQuiz", {
+        topic: target.language.value,
+      });
     },
-    [loginUser]
+    [socket]
   );
   return (
     <Container maxW={"5xl"}>
@@ -106,7 +102,6 @@ const Home: NextPage = () => {
             <Input
               type="text"
               name="username"
-              isRequired
               placeholder="Enter username"
               color={useColorModeValue("gray.800", "gray.200")}
               bg={useColorModeValue("gray.100", "gray.600")}

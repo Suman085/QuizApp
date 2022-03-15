@@ -11,14 +11,18 @@ import React from "react";
 import { SocketContext } from "../../socket";
 import Card from "../Card/Card";
 
-function QuizBoard({ isReady, ...props }: FlexProps & { isReady: boolean }) {
+function QuizBoard({
+  isReady,
+  quizId,
+  ...props
+}: FlexProps & { isReady: boolean; quizId: string }) {
   const socket = React.useContext(SocketContext);
   const handleReady = React.useCallback(() => {
-    socket?.emit("readyForQuiz");
-  }, [socket]);
+    socket?.emit("readyForQuiz", { quizId });
+  }, [quizId, socket]);
   const handleWait = React.useCallback(() => {
-    socket?.emit("waitForQuiz");
-  }, [socket]);
+    socket?.emit("waitForQuiz", { quizId });
+  }, [quizId, socket]);
   return (
     <Card
       as={Flex}

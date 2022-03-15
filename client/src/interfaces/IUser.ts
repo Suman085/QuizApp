@@ -3,5 +3,5 @@ export interface IUser {
   id?: string;
   quizId: string;
   avatar: string;
-  status?: string;
+  status?: "ready" | "waiting";
 }

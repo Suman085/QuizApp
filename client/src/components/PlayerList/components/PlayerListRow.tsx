@@ -2,7 +2,6 @@ import React from "react";
 import {
   Avatar,
   Badge,
-  Button,
   Flex,
   Td,
   Text,
@@ -33,8 +32,8 @@ function PlayerListRow(props: any) {
       </Td>
       <Td>
         <Badge
-          bg={status === "Ready" ? "green.400" : bgStatus}
-          color={status === "Ready" ? "white" : colorStatus}
+          bg={status === "ready" ? "green.400" : bgStatus}
+          color={status === "ready" ? "white" : colorStatus}
           fontSize="16px"
           p="3px 10px"
           borderRadius="8px"

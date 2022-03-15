@@ -12,24 +12,20 @@ export interface IContextValues {
   user?: IUser;
   clearUser?: VoidFunction;
   loginUser?: (user: IUser) => void;
+  updateUsername?: (newName: string) => void;
 }
 
 const UserProvider: React.FC = ({ children }) => {
   const socket = React.useContext(SocketContext);
   const [user, setUser] = React.useState<IUser>();
+
   React.useEffect(() => {
-    const user = userStorage.getItem(USERNAME);
-    if (!isEmpty(user)) {
-      setUser(user);
-      socket?.emit("login", {
-        username: user.username,
-        quizId: user.quizId,
-        avatar: user.avatar,
-      });
-      Router.push({ pathname: "/quiz", query: { language: user.quizId } });
-    } else {
-      Router.push("/");
-    }
+    // const user = userStorage.getItem(USERNAME);
+    // if (!isEmpty(user)) {
+    //   setUser(user);
+    //   socket?.emit("login", { user, quizId: user.quizId });
+    //   // Router.push({ pathname: "/quiz", query: { language: user.quizId } });
+    // }
   }, [socket]);
 
   const clearUser = React.useCallback(() => {
@@ -37,26 +33,23 @@ const UserProvider: React.FC = ({ children }) => {
     setUser(undefined);
   }, []);
 
-  const loginUser = React.useCallback(
-    ({ username, quizId, avatar }: IUser) => {
-      socket?.emit("login", {
-        username: username,
-        quizId: quizId,
-        avatar: avatar,
-      });
-      userStorage.setItem(USERNAME, {
-        username,
-        quizId: quizId,
-        avatar,
-      });
-      setUser({ username, quizId, avatar });
+  const loginUser = React.useCallback((user: IUser) => {
+    userStorage.setItem(USERNAME, user);
+    setUser(user);
+  }, []);
+
+  const updateUsername = React.useCallback(
+    (newName: string) => {
+      const updatedUser = { ...user!!, username: newName };
+      userStorage.setItem(USERNAME, updatedUser);
+      setUser(updatedUser);
     },
-    [socket]
+    [user]
   );
 
   const memoizedValue: IContextValues = React.useMemo(() => {
-    return { user, clearUser, loginUser };
-  }, [clearUser, loginUser, user]);
+    return { user, clearUser, loginUser, updateUsername };
+  }, [clearUser, loginUser, user, updateUsername]);
 
   return (
     <UserContext.Provider value={memoizedValue}>
