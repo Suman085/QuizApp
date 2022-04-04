@@ -99,19 +99,6 @@ const Home: NextPage = () => {
             direction={{ base: "column", md: "row" }}
             w={"full"}
           >
-            <Input
-              type="text"
-              name="username"
-              placeholder="Enter username"
-              color={useColorModeValue("gray.800", "gray.200")}
-              bg={useColorModeValue("gray.100", "gray.600")}
-              rounded={"full"}
-              border={0}
-              _focus={{
-                bg: useColorModeValue("gray.200", "gray.800"),
-                outline: "none",
-              }}
-            />
             <Button
               bg={"blue.400"}
               rounded={"full"}
