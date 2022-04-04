@@ -19,6 +19,8 @@ import {
   Editable,
   EditableInput,
   EditablePreview,
+  useEditableControls,
+  IconButton,
 } from "@chakra-ui/react";
 import QuizBoard from "../../src/components/QuizBoard";
 import PlayerList from "../../src/components/PlayerList";
@@ -26,6 +28,34 @@ import { SocketContext } from "../../src/socket";
 import Router, { useRouter } from "next/router";
 import { IUser } from "../../src/interfaces/IUser";
 import { useUserContext } from "../../src/providers/UserProvider";
+import { EditIcon, CheckIcon } from "@chakra-ui/icons";
+
+function EditableControls() {
+  const { isEditing, getSubmitButtonProps, getEditButtonProps } =
+    useEditableControls();
+
+  return isEditing ? (
+    <IconButton
+      colorScheme="green"
+      ml="1rem"
+      icon={<CheckIcon />}
+      aria-label="submit"
+      {...getSubmitButtonProps()}
+    >
+      &#10004;
+    </IconButton>
+  ) : (
+    <IconButton
+      colorScheme="gray"
+      ml="1rem"
+      icon={<EditIcon color="orange" />}
+      aria-label="edit"
+      {...getEditButtonProps()}
+    >
+      &#x270D;
+    </IconButton>
+  );
+}
 
 function Quiz() {
   const socket = React.useContext(SocketContext);
@@ -108,37 +138,45 @@ function Quiz() {
   const bg = useColorModeValue("gray.100", "gray.900");
   return (
     <Box background="radial-gradient(circle, rgba(2,0,36,1) 0%, rgba(0,9,121,1) 11%, rgba(0,212,255,1) 100%)">
-      {self && (
-        <HStack
-          w="100%"
-          h={16}
-          justifyContent="end"
-          alignItems={"center"}
-          padding={"1rem"}
-          bg={bg}
-        >
-          <Menu>
-            <MenuButton
-              as={Button}
-              rounded={"full"}
-              variant={"link"}
-              cursor={"pointer"}
-              minW={0}
+      <HStack
+        w="100%"
+        minH={16}
+        justifyContent="end"
+        alignItems={"center"}
+        padding={"1rem"}
+        bg={bg}
+      >
+        {self && (
+          <React.Fragment>
+            <Menu>
+              <MenuButton
+                as={Button}
+                rounded={"full"}
+                variant={"link"}
+                cursor={"pointer"}
+                minW={0}
+              >
+                <Avatar size={"sm"} src={self.avatar} />
+              </MenuButton>
+              <MenuList>
+                <MenuItem>Your Profile</MenuItem>
+                <MenuDivider />
+                <MenuItem onClick={handleLeave}>Leave quiz</MenuItem>
+              </MenuList>
+            </Menu>
+            <Editable
+              as={Flex}
+              alignItems="center"
+              onSubmit={handleSubmit}
+              defaultValue={self.username}
             >
-              <Avatar size={"sm"} src={self.avatar} />
-            </MenuButton>
-            <MenuList>
-              <MenuItem>Your Profile</MenuItem>
-              <MenuDivider />
-              <MenuItem onClick={handleLeave}>Leave quiz</MenuItem>
-            </MenuList>
-          </Menu>
-          <Editable onSubmit={handleSubmit} defaultValue={self.username}>
-            <EditablePreview />
-            <EditableInput />
-          </Editable>
-        </HStack>
-      )}
+              <EditablePreview />
+              <EditableInput />
+              <EditableControls />
+            </Editable>
+          </React.Fragment>
+        )}
+      </HStack>
       <HStack justify={"space-between"} p="1rem">
         <Heading>
           {isAllReady && (
